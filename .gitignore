@@ -1,0 +1,47 @@
+# ---------------------------------------------------------------
+# FFmpeg 二進位檔
+#
+# 1. ffmpeg.exe / ffprobe.exe 檔案很大，超過 GitHub 單檔 100 MB 上限，
+#    直接 push 會被拒絕（需改用 Git LFS）。
+# 2. 它們是 GPL v3 授權，隨附散布須履行提供對應原始碼等義務。
+#    不納入版控可讓本 repository 維持單純的 MIT 原始碼專案。
+#
+# build.bat 會在缺少時自動從 gyan.dev 下載，無須手動準備。
+# 詳見 THIRD-PARTY-NOTICES.md
+# ---------------------------------------------------------------
+ffmpeg/
+_ffmpeg_tmp/
+
+# PyInstaller 建置產物
+build/
+dist/
+*.spec
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 執行期產生的檔案
+app.log
+config.json
+
+# 下載產物
+*.mp4
+*.mp3
+*.webm
+*.m4a
+temp_download*
+
+# 使用者憑證（絕對不可提交）
+cookies.txt
+*.cookies
+
+# 編輯器 / 作業系統
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

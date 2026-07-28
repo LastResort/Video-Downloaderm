@@ -4,6 +4,10 @@ import time
 import functools
 import subprocess
 from logging_config import setup_logger, log_and_show_error
+from ffmpeg_strategy import (build_mp4_format, build_mp4_format_compat,
+                             compat_postprocessor_args, build_thumbnail_opts,
+                             build_throttle_opts, make_postprocessor_hook,
+                             is_format_unavailable_error)
 import yt_dlp
 
 # ------------------------------
@@ -107,7 +111,7 @@ def download_video_audio(url, resolution, download_path, file_format, download_s
     logger.info("Starting to download video/audio from URL: %s", url)
     final_filepath = None
     ffmpeg_path = os.path.join(os.path.dirname(__file__), 'ffmpeg', 'bin', 'ffmpeg.exe')
-    ydl_opts['ffmpeg_location'] = ffmpeg_path
+    ydl_opts = {}
     if file_format == 'mp4':
         # 從解析度字串中取得寬高，例如 "1920x1080"
         try:
@@ -122,14 +126,20 @@ def download_video_audio(url, resolution, download_path, file_format, download_s
             raise ValueError("解析解析度失敗，請檢查格式是否正確(例如 '1920x1080')") from e
         # 將下載檔案暫存為固定名稱，例如 temp_download.mp4
         temp_template = os.path.join(download_path, "temp_download.%(ext)s")
+        # 快速路徑：format chain 的每個候選都限定 m4a/AAC 音訊，
+        # 因此 Merger 的預設 -c copy 永遠安全，不需事先探測、也不會
+        # 誤把 Opus 封進 mp4（見 ffmpeg_strategy.py 說明）。
         ydl_opts = {
-            # 第一段先嘗試 webm，再嘗試 mp4，最後 fallback 到 best
-            'format': f'bestvideo[height={height}]+bestaudio/best/bestvideo+bestaudio/best',
+            'format': build_mp4_format(height),
             'outtmpl': temp_template,
             'noplaylist': True,
             'merge_output_format': 'mp4',
-            'postprocessor_args': ['-c:a', 'aac'],  # 強制使用 aac 音訊編碼
+            'ffmpeg_location': ffmpeg_path,
         }
+        # 內嵌 YouTube 封面為 mp4 cover art，
+        # 讓檔案總管即使無法解碼影片本身也能顯示縮圖。
+        ydl_opts.update(build_thumbnail_opts())
+        ydl_opts.update(build_throttle_opts())
     elif file_format == 'mp3':
         temp_template = os.path.join(download_path, "temp_download.%(ext)s")
         # 嘗試解析用戶選擇的位元率
@@ -156,7 +166,9 @@ def download_video_audio(url, resolution, download_path, file_format, download_s
                 'preferredcodec': 'mp3',
                 'preferredquality': preferred_quality,
             }],
+            'ffmpeg_location': ffmpeg_path,
         }
+        ydl_opts.update(build_throttle_opts())
     # 若勾選下載字幕且選擇了特定語言，加入 yt_dlp 下載字幕的選項
     if download_subtitles and subtitle_lang != "No subtitle":
         ydl_opts["subtitlesformat"] = 'srt'
@@ -183,8 +195,22 @@ def download_video_audio(url, resolution, download_path, file_format, download_s
                 if progress_callback:
                     progress_callback(0.99)
         ydl_opts['progress_hooks'] = [progress_hook]
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
+        # 下載結束後仍有合併/轉檔階段，補上 hook 讓進度不會看似卡在 99%
+        ydl_opts['postprocessor_hooks'] = [make_postprocessor_hook(progress_callback)]
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+        except Exception as e:
+            # 快速路徑要求音訊必為 m4a。極少數影片沒有任何 m4a 音軌，
+            # 此時改用寬鬆 chain 並把音訊重新編碼成 AAC 再跑一次。
+            if file_format != 'mp4' or not is_format_unavailable_error(e):
+                raise
+            logger.warning("No m4a audio available; retrying with AAC re-encode: %s", url)
+            ydl_opts['format'] = build_mp4_format_compat(height)
+            ydl_opts['postprocessor_args'] = compat_postprocessor_args()
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
         if file_format == 'mp4':
             output_ext = 'mp4'
         else:

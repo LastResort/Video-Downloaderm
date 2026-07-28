@@ -11,7 +11,10 @@ import requests
 import threading
 import io
 import os
+import re
 from CTkTable import CTkTable
+from scrollable_table_frame import ScrollableTableFrame
+from ffmpeg_strategy import is_bot_check_error
 import pywinstyles
 from logging_config import setup_logger, log_and_show_error
 from Page1 import get_video_info, download_video_audio
@@ -28,6 +31,25 @@ import asyncio
 # 初始化 Logger
 # ------------------------------
 logger = setup_logger(__name__)
+
+
+def show_download_error(exc, master, page_key, fallback_prefix):
+    """
+    統一呈現下載/解析錯誤。
+
+    YouTube 的機器人驗證訊息是一長串英文與 wiki 連結，對使用者毫無幫助，
+    這裡改以在地化的可操作指引取代；其餘錯誤維持原本的原始訊息輸出。
+    """
+    if is_bot_check_error(exc):
+        try:
+            lang = master.current_language
+            texts = LANGUAGES[lang][page_key]
+            messagebox.showerror(texts["bot_check_title"], texts["bot_check_message"])
+            logger.error("Blocked by YouTube bot check: %s", exc)
+            return
+        except Exception:
+            pass  # 語系資料缺漏時退回原始訊息
+    log_and_show_error(f"{fallback_prefix}{exc}", master)
 
 # ------------------------------
 # 語言設定資料
@@ -697,6 +719,15 @@ class Page1(ctk.CTkFrame):
         self.radio_mp3 = ctk.CTkRadioButton(self.frame_left, text="MP3", variable=self.format_var, value="mp3")
         self.radio_mp4.grid(row=2, column=2, padx=30, pady=5, sticky="w")
         self.radio_mp3.grid(row=3, column=2, padx=30, pady=5, sticky="w")
+
+        # 封面圖原始 PIL 物件（CTkImage 內部經過縮放，無法用於存檔，故另存一份）
+        self.current_thumbnail_img = None
+        self.download_thumb_btn = ctk.CTkButton(
+            self.frame_left,
+            command=self.download_thumbnail,
+            state="disabled",   # 尚未取得封面前不可點
+        )
+        self.download_thumb_btn.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
         
         self.subtitle_combobox = ctk.CTkComboBox(self.frame_left, values=["No subtitle"])
         self.subtitle_combobox.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
@@ -810,8 +841,10 @@ class Page1(ctk.CTkFrame):
                 if self.info_stop_event.is_set():
                     # 被用戶終止，不更新 UI
                     return
-                # 回到主執行緒更新 UI
-                def update_ui():
+                lang = self.master.current_language
+
+                # 先更新文字類 UI，讓使用者立刻看到結果
+                def update_text_ui():
                     self.video_title_label.configure(text=title)
                     self.resolution_combobox.configure(values=resolutions)
                     if resolutions:
@@ -820,17 +853,42 @@ class Page1(ctk.CTkFrame):
                         self.resolution_combobox.set("No resolutions")
                     self.subtitle_combobox.configure(values=subtitles)
                     self.subtitle_combobox.set(subtitles[0])
-                    # 更新封面圖
-                    response = requests.get(thumbnail_url)
-                    img_data = Image.open(io.BytesIO(response.content))
-                    self.thumbnail_image = CTkImage(light_image=img_data, dark_image=img_data, size=(400, 300))
-                    self.thumbnail_label.configure(image=self.thumbnail_image, text="")
+                    self.thumbnail_label.configure(
+                        text=LANGUAGES[lang]["page1"]["loading_thumbnail"])
                     # 啟用提交按鈕
                     self.submit_button.configure(state="normal")
-                self.master.after(0, update_ui)
+                self.master.after(0, update_text_ui)
+
+                # 封面圖在工作執行緒下載。原本寫在 update_ui 內，
+                # 會在主執行緒發出網路請求而凍結整個視窗。
+                img_data = None
+                if thumbnail_url:
+                    try:
+                        response = requests.get(thumbnail_url, timeout=10)
+                        if response.status_code == 200:
+                            img_data = Image.open(io.BytesIO(response.content))
+                    except Exception as e:
+                        logger.error(f"Failed to fetch thumbnail: {e}")
+
+                if self.info_stop_event.is_set():
+                    return
+
+                def update_image_ui():
+                    if img_data is None:
+                        self.current_thumbnail_img = None
+                        self.thumbnail_label.configure(text="No Thumbnail")
+                        self.download_thumb_btn.configure(state="disabled")
+                        return
+                    # 保留原始解析度的圖，供「下載封面」存檔使用
+                    self.current_thumbnail_img = img_data
+                    self.thumbnail_image = CTkImage(
+                        light_image=img_data, dark_image=img_data, size=(400, 300))
+                    self.thumbnail_label.configure(image=self.thumbnail_image, text="")
+                    self.download_thumb_btn.configure(state="normal")
+                self.master.after(0, update_image_ui)
             except Exception as e:
                 if not self.info_stop_event.is_set():
-                    log_and_show_error(f"Failed to fetch video info: {e}", self.master)
+                    show_download_error(e, self.master, "page1", "Failed to fetch video info: ")
                 self.master.after(0, lambda: self.submit_button.configure(state="normal"))
 
         def ask_cancel():
@@ -847,6 +905,41 @@ class Page1(ctk.CTkFrame):
         self.info_thread.start()
         # 10秒後詢問是否終止
         self.master.after(10000, ask_cancel)
+
+    def download_thumbnail(self):
+        """將目前顯示的封面圖另存為 jpg / png。"""
+        lang = self.master.current_language
+        if self.current_thumbnail_img is None:
+            return
+
+        # 以影片標題作為預設檔名，濾掉 Windows 不允許的字元
+        raw_title = self.video_title_label.cget("text") or ""
+        safe_title = re.sub(r'[\\/*?:"<>|]', "", raw_title).strip()
+        default_name = f"{safe_title}.jpg" if safe_title else "thumbnail.jpg"
+
+        file_path = filedialog.asksaveasfilename(
+            title=LANGUAGES[lang]["page1"]["save_thumbnail"],
+            defaultextension=".jpg",
+            initialfile=default_name,
+            initialdir=self.download_path,
+            filetypes=[("JPEG", "*.jpg"), ("PNG", "*.png")],
+        )
+        if not file_path:
+            return
+
+        try:
+            img = self.current_thumbnail_img
+            # JPEG 不支援 alpha 通道，含透明度的圖需先轉 RGB 才能存檔
+            if file_path.lower().endswith((".jpg", ".jpeg")) and img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")
+            img.save(file_path)
+            logger.info("Thumbnail saved: %s", file_path)
+            messagebox.showinfo(
+                LANGUAGES[lang]["page1"]["download_complete_title"],
+                file_path,
+            )
+        except Exception as e:
+            log_and_show_error(f"Failed to save thumbnail: {e}", self.master)
 
     def update_progress(self, progress):
         if progress != -1:
@@ -880,7 +973,7 @@ class Page1(ctk.CTkFrame):
                     LANGUAGES[self.master.current_language]['page1']["download_complete_message"].format(output_file)
                 ))
             except Exception as e:
-                log_and_show_error(f"Download failed: {e}", self.master)
+                show_download_error(e, self.master, "page1", "Download failed: ")
             finally:
                 # 回到主執行緒後重新啟用下載按鈕
                 self.master.after(0, lambda: self.download_button.configure(state="normal"))
@@ -951,6 +1044,7 @@ class Page1(ctk.CTkFrame):
 
         self.progress_bar_label.configure(text=LANGUAGES[lang]["page1"]["progress_ready"], font=self.master.FONT_BODY)
         self.download_button.configure(text=LANGUAGES[lang]["page1"]["download_button"], font=self.master.FONT_BUTTON)
+        self.download_thumb_btn.configure(text=LANGUAGES[lang]["page1"]["download_thumbnail"], font=self.master.FONT_BUTTON)
 
     def update_frame_tranparency(self):
         # 根據主題設定物件透明度
@@ -1043,11 +1137,12 @@ class Page2(ctk.CTkFrame):
         self.frame_left_first.grid_rowconfigure(1, weight=1)
         self.frame_left_first.grid_columnconfigure((0,1,2,3,4,5), weight=1)
 
-        self.table_scroll = ctk.CTkScrollableFrame(
+        # 使用自訂容器以取得水平捲軸；CTkScrollableFrame 在垂直模式下
+        # 會把內層寬度鎖死為畫布寬度，導致表格無法橫向展開。
+        self.table_scroll = ScrollableTableFrame(
             self.frame_left_first,
             bg_color=("#FFFFFF", "#000001"), 
             fg_color=("#FFFFFF", "#000001"),
-
         )
         self.table_scroll.grid(row=0, column=0, columnspan=6, sticky="nsew")
 
@@ -1060,9 +1155,12 @@ class Page2(ctk.CTkFrame):
             hover_color="skyblue",
             corner_radius=0,
             font=self.master.FONT_BODY,
-            command=self.on_cell_click
+            command=self.on_cell_click,
+            anchor="w",          # 儲存格文字靠左對齊
+            wraplength=10000,    # 不自動換行，長標題交由水平捲軸處理
         )
-        self.table.pack(padx=10, pady=10, fill="both", expand=True)
+        # 不使用 expand=True，否則表格會被壓縮至容器寬度而無法溢出
+        self.table.pack(padx=10, pady=10, anchor="nw")
 
 
         self.select_all_btn = ctk.CTkButton(self.frame_left_first, command=self.select_all_rows)
@@ -1156,29 +1254,56 @@ class Page2(ctk.CTkFrame):
         設定表格每一欄的寬度。
         widths: 一個列表，每個元素代表對應欄的固定寬度（像素）。
         例如: [300, 100, 80, 400]
-        (但沒啥用)
-        """
-        for (row, col), cell in self.table.frame.items():
-            if col in widths:
-                # 設定固定寬度，同時設定 wraplength 避免文字溢出
-                cell.configure(width=widths[col])
 
-    def update_table_header(self):
+        原實作為 `if col in widths`，這是在比對 col 是否等於 widths 的「值」
+        （例如 0 in [400,200,100,100] 恆為 False），因此從未生效。
+
+        另外，改以 grid_columnconfigure(minsize=) 設定欄寬，而非逐一
+        cell.configure(width=)：cell 是以 sticky="nsew" 放進 grid，會自動
+        撐滿所在欄，因此只需設定 4 個欄位即可，不必觸碰全部 (列 x 欄) 個
+        widget——每次 configure 都會觸發 CTkButton 重繪，在上百列時很昂貴。
+        CTkTable 預設對每欄設 weight=1 使其平均瓜分空間，會蓋掉寬度設定，
+        故一併改為 weight=0。
+        """
+        try:
+            inside = self.table.inside_frame
+        except AttributeError:
+            return
+        for col, width in enumerate(widths):
+            inside.grid_columnconfigure(col, weight=0, minsize=width)
+
+    def apply_header_style(self):
+        """套用表頭文字與底色（只動第 0 列，共 4 個 cell）。"""
         lang = self.master.current_language
-        # 根據語系設定表頭
         header = [
             LANGUAGES[lang]["page2"]["video_title"],
             LANGUAGES[lang]["page2"]["resolution"],
             LANGUAGES[lang]["page2"]["format"],
             LANGUAGES[lang]["page2"]["url"]
         ]
-        # 根據主題決定表頭背景色，這裡以 Light 主題用淺灰、Dark 主題用深灰為例
+        # 根據主題決定表頭背景色，Light 主題用淺灰、Dark 主題用深灰
         header_color = "gray90" if self.master.config.get("theme", "Dark") == "Light" else "gray25"
-        # 更新表頭每個 cell 的文字與背景色
         for col in range(len(header)):
             if (0, col) in self.table.frame:
                 self.table.frame[(0, col)].configure(text=header[col], fg_color=header_color)
-        self.set_fixed_column_widths([400, 200, 100, 100])
+
+    def update_table_header(self):
+        self.apply_header_style()
+        self._refresh_table_layout()
+
+    # 影片名稱 / 畫質 / 格式 / 網址
+    TABLE_COLUMN_WIDTHS = [520, 110, 90, 420]
+
+    def _refresh_table_layout(self):
+        """
+        重新套用欄寬並更新捲動範圍。
+
+        CTkTable 的 add_row() / delete_row() 會 destroy 並重建所有 cell，
+        先前設定的寬度會一併消失，因此每次異動列之後都必須重套。
+        """
+        self.set_fixed_column_widths(self.TABLE_COLUMN_WIDTHS)
+        if hasattr(self.table_scroll, "refresh_scrollregion"):
+            self.table_scroll.refresh_scrollregion()
 
     def update_total_label(self):
         total = len(self.playlist_items)
@@ -1238,15 +1363,15 @@ class Page2(ctk.CTkFrame):
                     self.playlist_items.append(item)
                 # 在主執行緒中更新 UI（因為 Tkinter 介面更新必須在主執行緒中進行）
                 def update_ui():
-                    for item in items:
-                        self.table.add_row([item["title"], item["resolution"], item["format"], item["url"]])
-                    self.update_total_label()
-                    self.update_table_header()
+                    # CTkTable 的 add_row() 每次都會 destroy 全部 cell 再重畫整張表，
+                    # 逐筆呼叫會變成 O(n^2)（112 筆約需建立 25,000 個 widget）。
+                    # 改用 update_values() 一次帶入全部資料，只重建一次。
+                    self.rebuild_table()
                     self.submit_btn.configure(state="normal")
                 self.master.after(0, update_ui)
             except Exception as e:
                 if not self.playlist_stop_event.is_set():
-                    log_and_show_error(f"Failed to parse playlist: {e}", self.master)
+                    show_download_error(e, self.master, "page2", "Failed to parse playlist: ")
                 self.master.after(0, lambda: self.submit_btn.configure(state="normal"))
 
         def ask_cancel():
@@ -1275,24 +1400,78 @@ class Page2(ctk.CTkFrame):
         return selected_rows
 
     def select_all_rows(self):
-        """ 遍歷表格中除第一列（表頭）以外的所有列，呼叫 select_row() 使其選取 """
+        """
+        全選 / 取消全選（第 0 列為表頭，不納入）。
+
+        原實作逐列呼叫 CTkTable.select_row()，而其內部的 edit_row() 每次
+        都會呼叫 O(列 x 欄) 的 update_data()，整體變成 O(n^2)。
+        這裡直接對 cell 設定顏色，最後才統一同步一次資料。
+        """
         selected_rows = self.get_selected_rows()
-        if len(selected_rows) == self.table.rows - 1:
-            # 如果所有列都已選取，則取消選取所有列
-            for row in range(1, self.table.rows):
-                self.table.deselect_row(row)
-        else:
-            # 假設 self.table.rows 回傳表格總列數，且第0列為表頭
-            for row in range(1, self.table.rows):
-                self.table.select_row(row)
+        want_select = len(selected_rows) != self.table.rows - 1
+
+        for row in range(1, self.table.rows):
+            # 取消選取時要還原 CTkTable 的斑馬紋交替色，不能用單一顏色
+            color = (self.table.hover_color if want_select
+                     else (self.table.fg_color if row % 2 == 0 else self.table.fg_color2))
+            for col in range(self.table.columns):
+                cell = self.table.frame.get((row, col))
+                if cell is None:
+                    continue
+                cell.configure(require_redraw=True, fg_color=color)
+                # 同步 CTkTable 內部狀態，否則之後任何 update_data()
+                # 或重繪都會把顏色洗掉
+                args = self.table.data.get((row, col), {}).get("args")
+                if isinstance(args, dict):
+                    args["fg_color"] = color
 
     def delete_selected_rows(self):
-        """刪除表格中選取的列，並從內部清單中移除"""
-        selected = self.get_selected_rows()  # 假設此方法回傳選取列索引列表
-        for index in sorted(selected, reverse=True):
-            self.table.delete_row(index)
-            del self.playlist_items[index-1]
+        """
+        刪除表格中選取的列，並從內部清單中移除。
+
+        資料本身在記憶體的 self.playlist_items，刪除不涉及任何網路存取；
+        先前之所以很慢，是因為 CTkTable.delete_row() 每次都會重建整張表，
+        逐筆呼叫等於重建 N 次。這裡改成一次算出保留的資料再整批重建。
+        """
+        selected = self.get_selected_rows()   # 表格列索引，第 0 列為表頭
+        if not selected:
+            return
+        drop = {i - 1 for i in selected if i > 0}   # 轉成 playlist_items 的索引
+        self.playlist_items = [item for idx, item in enumerate(self.playlist_items)
+                               if idx not in drop]
+        self.rebuild_table()
+
+    def rebuild_table(self):
+        """
+        依 self.playlist_items 重建整張表格。
+
+        只呼叫一次 update_values()，避免逐筆 add_row / delete_row
+        造成的重複重建。
+        """
+        lang = self.master.current_language
+        header = [
+            LANGUAGES[lang]["page2"]["video_title"],
+            LANGUAGES[lang]["page2"]["resolution"],
+            LANGUAGES[lang]["page2"]["format"],
+            LANGUAGES[lang]["page2"]["url"],
+        ]
+        values = [header] + [
+            [it["title"], it["resolution"], it["format"], it["url"]]
+            for it in self.playlist_items
+        ]
+
+        # CTkTable.update_values() 只換掉 self.values，並未同步 self.rows /
+        # self.columns，但 draw_table() 是以 range(self.rows) 決定要畫幾列。
+        # 不先更新這兩個欄位的話，無論帶入多少資料都只會畫出建表當下的列數
+        # （本專案初始為 1，也就是只剩表頭）。
+        # add_row / delete_rows 都有維護這兩個欄位，唯獨 update_values 漏掉。
+        self.table.rows = len(values)
+        self.table.columns = len(values[0])
+        self.table.update_values(values)
+
         self.update_total_label()
+        self.apply_header_style()
+        self._refresh_table_layout()
 
     def on_cell_click(self, cell_data):
         """
@@ -1366,7 +1545,8 @@ class Page2(ctk.CTkFrame):
 
         def thread_func():
             completed = 0
-            max_threads = 4  # 同時最多執行 4 個下載任務
+            # 併發過高會加速觸發 YouTube 的機器人驗證，取 3 為折衷值
+            max_threads = 3
             self.master.after(0, lambda: self.update_progress(0))
             with ThreadPoolExecutor(max_workers=max_threads) as executor:
                 futures = [executor.submit(download_item, item, idx)
@@ -1375,7 +1555,7 @@ class Page2(ctk.CTkFrame):
                     try:
                         idx, output_file = future.result()
                     except Exception as e:
-                        log_and_show_error(f"Download failed: {e}", self.master)
+                        show_download_error(e, self.master, "page2", "Download failed: ")
                         continue
                     completed += 1
                     progress = completed / total

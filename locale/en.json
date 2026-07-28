@@ -1,18 +1,32 @@
 {
     "font": {
-    "logo":   { "family": "Times New Roman", "size": 36, "weight": "bold" },
-    "title":  { "family": "Times New Roman", "size": 20, "weight": "bold" },
-    "body":   { "family": "Times New Roman", "size": 14 },
-    "button": { "family": "Times New Roman", "size": 14 }
+        "logo": {
+            "family": "Times New Roman",
+            "size": 36,
+            "weight": "bold"
+        },
+        "title": {
+            "family": "Times New Roman",
+            "size": 20,
+            "weight": "bold"
+        },
+        "body": {
+            "family": "Times New Roman",
+            "size": 14
+        },
+        "button": {
+            "family": "Times New Roman",
+            "size": 14
+        }
     },
     "setting": {
         "setting_title": "Setting",
-        "segmentedBtn":{
-        "theme": "Theme",
-        "language": "Language",
-        "resolution": "Window Size",
-        "picture": "Picture",
-        "others": "Others"
+        "segmentedBtn": {
+            "theme": "Theme",
+            "language": "Language",
+            "resolution": "Window Size",
+            "picture": "Picture",
+            "others": "Others"
         },
         "theme_label": "Theme",
         "theme_color_label": "Theme Color (Restart the app to apply changes)",
@@ -36,7 +50,7 @@
         "saved_success": "Settings saved successfully"
     },
     "homePage": {
-        "title_label": "Video DownloadErm ver2.0"
+        "title_label": "Video DownloadErm"
     },
     "page1": {
         "page1_title": "Video Download",
@@ -54,7 +68,14 @@
         "Processing": "Processing...",
         "Processing_completed": "Processing completed",
         "timeout_title": "Timeout",
-        "timeout_message": "Getting video information took more than 10 seconds, do you want to cancel?"
+        "timeout_message": "Getting video information took more than 10 seconds, do you want to cancel?",
+        "fetching_info": "Fetching video info...",
+        "loading_thumbnail": "Loading thumbnail...",
+        "please_wait": "Parsing is taking longer than expected, please wait...",
+        "save_thumbnail": "Save Thumbnail",
+        "download_thumbnail": "Download Thumbnail",
+        "bot_check_title": "Sign-in Verification Required",
+        "bot_check_message": "YouTube requires sign-in verification (Sign in to confirm you're not a bot).\n\nThis usually happens after downloading many videos in a short time. Try one of the following:\n1. Wait a while and try again\n2. Export cookies.txt with a browser extension and import it under Settings -> Others -> Cookies"
     },
     "page2": {
         "page2_title": "YT Playlist Download",
@@ -78,7 +99,9 @@
         "Processing_completed": "Processing completed",
         "no_ad_label": "Ad space (no ad here)",
         "timeout_title": "Timeout",
-        "timeout_message": "Getting playlist information took more than 10 seconds, do you want to cancel?"
+        "timeout_message": "Getting playlist information took more than 10 seconds, do you want to cancel?",
+        "bot_check_title": "Sign-in Verification Required",
+        "bot_check_message": "YouTube requires sign-in verification (Sign in to confirm you're not a bot).\n\nThis usually happens after downloading many videos in a short time. Try one of the following:\n1. Wait a while and try again\n2. Export cookies.txt with a browser extension and import it under Settings -> Others -> Cookies"
     },
     "page3": {
         "page3_title": "Media Converter",

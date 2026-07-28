@@ -1,13 +1,27 @@
 {
     "font": {
-    "logo":   { "family": "Meiryo", "size": 36, "weight": "bold" },
-    "title":  { "family": "Meiryo", "size": 20, "weight": "bold" },
-    "body":   { "family": "Meiryo", "size": 14 },
-    "button": { "family": "Meiryo", "size": 14 }
+        "logo": {
+            "family": "Meiryo",
+            "size": 36,
+            "weight": "bold"
+        },
+        "title": {
+            "family": "Meiryo",
+            "size": 20,
+            "weight": "bold"
+        },
+        "body": {
+            "family": "Meiryo",
+            "size": 14
+        },
+        "button": {
+            "family": "Meiryo",
+            "size": 14
+        }
     },
     "setting": {
         "setting_title": "設定",
-        "segmentedBtn":{
+        "segmentedBtn": {
             "theme": "テーマ",
             "language": "言語",
             "resolution": "ウィンドウサイズ",
@@ -36,7 +50,7 @@
         "saved_success": "設定が保存されました"
     },
     "homePage": {
-        "title_label": "Video DownloadErm ver2.0"
+        "title_label": "Video DownloadErm"
     },
     "page1": {
         "page1_title": "動画ダウンロード",
@@ -54,7 +68,14 @@
         "Processing": "処理中...",
         "Processing_completed": "処理完了",
         "timeout_title": "タイムアウト",
-        "timeout_message": "動画情報の取得に10秒以上かかっています。キャンセルしますか？"
+        "timeout_message": "動画情報の取得に10秒以上かかっています。キャンセルしますか？",
+        "fetching_info": "動画情報を取得しています...",
+        "loading_thumbnail": "サムネイルを読み込んでいます...",
+        "please_wait": "解析に時間がかかっています。少々お待ちください...",
+        "save_thumbnail": "サムネイルを保存",
+        "download_thumbnail": "サムネイルをダウンロード",
+        "bot_check_title": "ログイン確認が必要です",
+        "bot_check_message": "YouTube がログイン確認を要求しています（Sign in to confirm you're not a bot）。\n\n短時間に多数の動画をダウンロードすると発生します。次のいずれかをお試しください：\n1. しばらく待ってから再試行する\n2. ブラウザ拡張機能で cookies.txt をエクスポートし、「設定 → その他 → Cookies」からインポートする"
     },
     "page2": {
         "page2_title": "YTプレイリストダウンロード",
@@ -78,7 +99,9 @@
         "Processing_completed": "処理完了",
         "no_ad_label": "広告スペース（広告はありません）",
         "timeout_title": "タイムアウト",
-        "timeout_message": "プレイリスト情報の取得に10秒以上かかっています。キャンセルしますか？"
+        "timeout_message": "プレイリスト情報の取得に10秒以上かかっています。キャンセルしますか？",
+        "bot_check_title": "ログイン確認が必要です",
+        "bot_check_message": "YouTube がログイン確認を要求しています（Sign in to confirm you're not a bot）。\n\n短時間に多数の動画をダウンロードすると発生します。次のいずれかをお試しください：\n1. しばらく待ってから再試行する\n2. ブラウザ拡張機能で cookies.txt をエクスポートし、「設定 → その他 → Cookies」からインポートする"
     },
     "page3": {
         "page3_title": "メディア変換",

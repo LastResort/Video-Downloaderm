@@ -1,0 +1,16 @@
+# Windows 批次檔必須維持 CRLF。
+# 若被轉成 LF，cmd.exe 會把整個檔案當成一行解析，出現
+# 「'xxx' 不是內部或外部命令」之類的錯誤。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二進位檔，不做任何換行轉換
+*.png  binary
+*.ico  binary
+*.exe  binary
+*.jpg  binary
+*.jpeg binary
+
+# 註：此處刻意不設定 `* text=auto`。
+# 既有原始碼混用 CRLF 與 LF，全域正規化會產生數百行純換行差異，
+# 掩蓋實際的程式修改。如需統一換行，建議另開一個獨立 commit 處理。

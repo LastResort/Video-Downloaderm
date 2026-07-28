@@ -1,13 +1,27 @@
 {
     "font": {
-    "logo":   { "family": "Arial", "size": 36, "weight": "bold" },
-    "title":  { "family": "Arial", "size": 20, "weight": "bold" },
-    "body":   { "family": "Arial", "size": 14 },
-    "button": { "family": "Arial", "size": 14 }
+        "logo": {
+            "family": "Arial",
+            "size": 36,
+            "weight": "bold"
+        },
+        "title": {
+            "family": "Arial",
+            "size": 20,
+            "weight": "bold"
+        },
+        "body": {
+            "family": "Arial",
+            "size": 14
+        },
+        "button": {
+            "family": "Arial",
+            "size": 14
+        }
     },
     "setting": {
         "setting_title": "Configuración",
-        "segmentedBtn":{
+        "segmentedBtn": {
             "theme": "Tema",
             "language": "Idioma",
             "resolution": "Tamaño de ventana",
@@ -36,7 +50,7 @@
         "saved_success": "Configuración guardada correctamente"
     },
     "homePage": {
-        "title_label": "Video DownloadErm ver2.0"
+        "title_label": "Video DownloadErm"
     },
     "page1": {
         "page1_title": "Descarga de video",
@@ -54,7 +68,14 @@
         "Processing": "Procesando...",
         "Processing_completed": "Procesamiento completado",
         "timeout_title": "Tiempo de espera",
-        "timeout_message": "Obtener información del video tomó más de 10 segundos, ¿desea cancelar?"
+        "timeout_message": "Obtener información del video tomó más de 10 segundos, ¿desea cancelar?",
+        "fetching_info": "Obteniendo información del video...",
+        "loading_thumbnail": "Cargando miniatura...",
+        "please_wait": "El análisis está tardando un poco, por favor espere...",
+        "save_thumbnail": "Guardar miniatura",
+        "download_thumbnail": "Descargar miniatura",
+        "bot_check_title": "Se requiere verificación de inicio de sesión",
+        "bot_check_message": "YouTube requiere verificación de inicio de sesión (Sign in to confirm you're not a bot).\n\nSuele ocurrir tras descargar muchos vídeos en poco tiempo. Pruebe una de estas opciones:\n1. Espere un rato y vuelva a intentarlo\n2. Exporte cookies.txt con una extensión del navegador e impórtelo en Configuración -> Otros -> Cookies"
     },
     "page2": {
         "page2_title": "Descarga de lista de reproducción de YT",
@@ -78,7 +99,9 @@
         "Processing_completed": "Procesamiento completado",
         "no_ad_label": "Espacio publicitario (sin anuncios)",
         "timeout_title": "Tiempo de espera",
-        "timeout_message": "Obtener información de la lista de reproducción tomó más de 10 segundos, ¿desea cancelar?"
+        "timeout_message": "Obtener información de la lista de reproducción tomó más de 10 segundos, ¿desea cancelar?",
+        "bot_check_title": "Se requiere verificación de inicio de sesión",
+        "bot_check_message": "YouTube requiere verificación de inicio de sesión (Sign in to confirm you're not a bot).\n\nSuele ocurrir tras descargar muchos vídeos en poco tiempo. Pruebe una de estas opciones:\n1. Espere un rato y vuelva a intentarlo\n2. Exporte cookies.txt con una extensión del navegador e impórtelo en Configuración -> Otros -> Cookies"
     },
     "page3": {
         "page3_title": "Convertidor multimedia",

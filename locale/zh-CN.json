@@ -1,13 +1,27 @@
 {
     "font": {
-    "logo":   { "family": "Microsoft YaHei", "size": 36, "weight": "bold" },
-    "title":  { "family": "Microsoft YaHei", "size": 20, "weight": "bold" },
-    "body":   { "family": "Microsoft YaHei", "size": 14 },
-    "button": { "family": "Microsoft YaHei", "size": 14 }
+        "logo": {
+            "family": "Microsoft YaHei",
+            "size": 36,
+            "weight": "bold"
+        },
+        "title": {
+            "family": "Microsoft YaHei",
+            "size": 20,
+            "weight": "bold"
+        },
+        "body": {
+            "family": "Microsoft YaHei",
+            "size": 14
+        },
+        "button": {
+            "family": "Microsoft YaHei",
+            "size": 14
+        }
     },
     "setting": {
         "setting_title": "设置",
-        "segmentedBtn":{
+        "segmentedBtn": {
             "theme": "主题",
             "language": "语言",
             "resolution": "窗口大小",
@@ -36,7 +50,7 @@
         "saved_success": "设置已保存成功"
     },
     "homePage": {
-        "title_label": "Video DownloadErm ver2.0"
+        "title_label": "Video DownloadErm"
     },
     "page1": {
         "page1_title": "单视频下载",
@@ -54,7 +68,14 @@
         "Processing": "处理中...",
         "Processing_completed": "处理完成",
         "timeout_title": "等待超时",
-        "timeout_message": "获取视频信息超过10秒，是否要终止？"
+        "timeout_message": "获取视频信息超过10秒，是否要终止？",
+        "fetching_info": "正在获取视频信息...",
+        "loading_thumbnail": "封面图正在加载中...",
+        "please_wait": "解析时间较长，请稍候片刻...",
+        "save_thumbnail": "保存封面图",
+        "download_thumbnail": "下载封面",
+        "bot_check_title": "需要登录验证",
+        "bot_check_message": "YouTube 要求登录验证（Sign in to confirm you're not a bot）。\n\n这通常是短时间内下载过多视频所致。请采取以下任一方式：\n1. 稍候一段时间再试\n2. 使用浏览器扩展导出 cookies.txt，并于「设置 → 其他 → Cookies」导入"
     },
     "page2": {
         "page2_title": "YT列表下载",
@@ -78,7 +99,9 @@
         "Processing_completed": "处理完成",
         "no_ad_label": "广告位（暂无广告）",
         "timeout_title": "等待超时",
-        "timeout_message": "获取播放列表信息超过10秒，是否要终止？"
+        "timeout_message": "获取播放列表信息超过10秒，是否要终止？",
+        "bot_check_title": "需要登录验证",
+        "bot_check_message": "YouTube 要求登录验证（Sign in to confirm you're not a bot）。\n\n这通常是短时间内下载过多视频所致。请采取以下任一方式：\n1. 稍候一段时间再试\n2. 使用浏览器扩展导出 cookies.txt，并于「设置 → 其他 → Cookies」导入"
     },
     "page3": {
         "page3_title": "音视频转换器",

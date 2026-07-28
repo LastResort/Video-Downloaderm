@@ -1,18 +1,32 @@
 {
     "font": {
-        "logo": { "family": "Microsoft JhengHei", "size": 36, "weight": "bold" },
-        "title": { "family": "Microsoft JhengHei", "size": 20, "weight": "bold" },
-        "body": { "family": "Microsoft JhengHei", "size": 14 },
-        "button": { "family": "Microsoft JhengHei", "size": 14 }
+        "logo": {
+            "family": "Microsoft JhengHei",
+            "size": 36,
+            "weight": "bold"
+        },
+        "title": {
+            "family": "Microsoft JhengHei",
+            "size": 20,
+            "weight": "bold"
+        },
+        "body": {
+            "family": "Microsoft JhengHei",
+            "size": 14
+        },
+        "button": {
+            "family": "Microsoft JhengHei",
+            "size": 14
+        }
     },
     "setting": {
         "setting_title": "設定",
-        "segmentedBtn":{
-        "theme": "主題",
-        "language": "語言",
-        "resolution": "視窗大小",
-        "picture": "圖片",
-        "others": "其他"
+        "segmentedBtn": {
+            "theme": "主題",
+            "language": "語言",
+            "resolution": "視窗大小",
+            "picture": "圖片",
+            "others": "其他"
         },
         "theme_label": "主題",
         "theme_color_label": "主題顏色(修改後請自行重啟程式)",
@@ -36,7 +50,7 @@
         "saved_success": "設定已儲存成功"
     },
     "homePage": {
-        "title_label": "Video DownloadErm ver2.0"
+        "title_label": "Video DownloadErm"
     },
     "page1": {
         "page1_title": "單影片下載",
@@ -54,7 +68,14 @@
         "Processing": "處理中...",
         "Processing_completed": "處理完成",
         "timeout_title": "等待逾時",
-        "timeout_message": "取得影片資訊超過10秒，是否要終止？"
+        "timeout_message": "取得影片資訊超過10秒，是否要終止？",
+        "fetching_info": "正在獲取影片資訊...",
+        "loading_thumbnail": "封面圖正在加載中...",
+        "please_wait": "解析時間較長，請稍候片刻...",
+        "save_thumbnail": "儲存封面圖",
+        "download_thumbnail": "下載封面",
+        "bot_check_title": "需要登入驗證",
+        "bot_check_message": "YouTube 要求登入驗證（Sign in to confirm you're not a bot）。\n\n這通常是短時間內下載過多影片所致。請採取以下任一方式：\n1. 稍候一段時間再試\n2. 使用瀏覽器擴充套件匯出 cookies.txt，並於「設定 → 其他 → Cookies」匯入"
     },
     "page2": {
         "page2_title": "YT清單下載",
@@ -78,7 +99,9 @@
         "Processing_completed": "處理完成",
         "no_ad_label": "廣告放置區，但是沒有廣告 (歡迎自訂廣告)",
         "timeout_title": "等待逾時",
-        "timeout_message": "取得播放清單資訊超過10秒，是否要終止？"
+        "timeout_message": "取得播放清單資訊超過10秒，是否要終止？",
+        "bot_check_title": "需要登入驗證",
+        "bot_check_message": "YouTube 要求登入驗證（Sign in to confirm you're not a bot）。\n\n這通常是短時間內下載過多影片所致。請採取以下任一方式：\n1. 稍候一段時間再試\n2. 使用瀏覽器擴充套件匯出 cookies.txt，並於「設定 → 其他 → Cookies」匯入"
     },
     "page3": {
         "page3_title": "影音轉檔器",
